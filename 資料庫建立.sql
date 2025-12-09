@@ -37,7 +37,7 @@ INSERT INTO users (username, password, display_name, email) VALUES
 CREATE TABLE IF NOT EXISTS personal_info (
     person_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '個人ID',
     id_number VARCHAR(10) NOT NULL UNIQUE COMMENT '身分證字號',
-    name VARCHAR(100) NOT NULL COMMENT '姓名',
+    name VARCHAR(100) COMMENT '姓名',
     birth_date DATE NOT NULL COMMENT '出生日期',
     gender ENUM('男', '女') NOT NULL COMMENT '性別',
     phone VARCHAR(20) COMMENT '聯絡電話',
