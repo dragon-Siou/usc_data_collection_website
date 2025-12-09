@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>血壓資料上傳</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app" v-cloak>
+    <!-- 頂部導覽列 -->
+    <div v-if="!submitted" class="fixed top-0 right-0 p-4 md:p-6 z-50 flex items-center gap-3 md:gap-4">
+      <div class="bg-white px-4 py-2 md:px-6 md:py-3 rounded-xl shadow-md flex items-center">
+        <svg class="w-5 h-5 md:w-6 md:h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        <span class="text-lg md:text-xl font-semibold text-gray-700">{{ displayName }}</span>
+      </div>
+      <button @click="handleLogout" class="flex items-center text-gray-600 hover:text-red-600 text-lg md:text-xl font-medium bg-white px-4 py-2 md:px-6 md:py-3 rounded-xl shadow-md hover:shadow-lg transition-all">
+        <svg class="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        登出
+      </button>
+    </div>
+
+    <!-- 成功提示頁面 -->
+    <div v-if="submitted" class="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 text-center max-w-md">
+        <svg class="w-20 h-20 md:w-24 md:h-24 text-green-500 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">上傳成功！</h2>
+        <p class="text-xl md:text-2xl text-gray-600 mb-6">血壓資料已成功記錄</p>
+        <a href="index.html" class="inline-block bg-blue-500 hover:bg-blue-600 text-white text-xl md:text-2xl font-bold px-8 py-4 rounded-xl transition-all">
+          返回首頁
+        </a>
+      </div>
+    </div>
+
+    <!-- 表單頁面 -->
+    <div v-else class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8 pb-32">
+      <div class="max-w-3xl mx-auto">
+        <a href="index.html" class="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-xl md:text-2xl font-medium">
+          <svg class="w-6 h-6 md:w-7 md:h-7 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          返回首頁
+        </a>
+
+        <div class="bg-white rounded-3xl shadow-xl p-6 md:p-10">
+          <div class="mb-8">
+            <div class="bg-red-500 w-16 h-16 md:w-20 md:h-20 rounded-2xl mb-4 flex items-center justify-center text-white text-3xl md:text-4xl font-bold">
+              <svg class="w-10 h-10 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-800 mb-2">血壓資料上傳</h1>
+            <p class="text-xl md:text-2xl text-gray-600">請填寫血壓量測紀錄</p>
+          </div>
+
+          <div class="space-y-6 md:space-y-8">
+            <!-- 身分證 -->
+            <div>
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                身分證字號 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="formData.idNumber"
+                type="text"
+                maxlength="10"
+                class="w-full px-5 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-3 border-gray-300 rounded-xl focus:ring-4 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+                placeholder="例：A123456789"
+              />
+              <p v-if="errors.idNumber" class="mt-2 text-lg text-red-500">{{ errors.idNumber }}</p>
+            </div>
+
+            <!-- 生日 -->
+            <div>
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                生日 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="formData.birthDate"
+                type="date"
+                class="w-full px-5 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-3 border-gray-300 rounded-xl focus:ring-4 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+              />
+              <p v-if="errors.birthDate" class="mt-2 text-lg text-red-500">{{ errors.birthDate }}</p>
+            </div>
+
+            <!-- 過卡日期 -->
+            <div>
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                過卡日期 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="formData.cardDate"
+                type="date"
+                class="w-full px-5 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-3 border-gray-300 rounded-xl focus:ring-4 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+              />
+              <p v-if="errors.cardDate" class="mt-2 text-lg text-red-500">{{ errors.cardDate }}</p>
+              <p class="mt-2 text-base md:text-lg text-gray-500">請填寫就醫或量測當天日期</p>
+            </div>
+
+            <!-- 就醫序號 -->
+            <div>
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                就醫序號 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="formData.visitNumber"
+                type="text"
+                maxlength="4"
+                class="w-full px-5 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-3 border-gray-300 rounded-xl focus:ring-4 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+                placeholder="請輸入4碼序號，例：0001"
+              />
+              <p v-if="errors.visitNumber" class="mt-2 text-lg text-red-500">{{ errors.visitNumber }}</p>
+              <p class="mt-2 text-base md:text-lg text-gray-500">4碼數字，例：0001、0002</p>
+            </div>
+
+            <!-- 收縮壓 -->
+            <div>
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                收縮壓 (mmHg) <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model.number="formData.systolicBP"
+                type="number"
+                min="0"
+                max="300"
+                class="w-full px-5 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-3 border-gray-300 rounded-xl focus:ring-4 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+                placeholder="例：120"
+              />
+              <p v-if="errors.systolicBP" class="mt-2 text-lg text-red-500">{{ errors.systolicBP }}</p>
+              <p class="mt-2 text-base md:text-lg text-gray-500">正常範圍：90-140 mmHg</p>
+            </div>
+
+            <!-- 舒張壓 -->
+            <div>
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                舒張壓 (mmHg) <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model.number="formData.diastolicBP"
+                type="number"
+                min="0"
+                max="200"
+                class="w-full px-5 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-3 border-gray-300 rounded-xl focus:ring-4 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+                placeholder="例：80"
+              />
+              <p v-if="errors.diastolicBP" class="mt-2 text-lg text-red-500">{{ errors.diastolicBP }}</p>
+              <p class="mt-2 text-base md:text-lg text-gray-500">正常範圍：60-90 mmHg</p>
+            </div>
+
+            <!-- 血壓狀態提示 -->
+            <div v-if="bloodPressureStatus" class="p-5 rounded-xl border-3" :class="bloodPressureStatus.class">
+              <div class="flex items-center">
+                <svg class="w-8 h-8 mr-3 flex-shrink-0" :class="bloodPressureStatus.iconClass" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p class="text-xl md:text-2xl font-bold" :class="bloodPressureStatus.textClass">{{ bloodPressureStatus.title }}</p>
+                  <p class="text-base md:text-lg mt-1" :class="bloodPressureStatus.descClass">{{ bloodPressureStatus.description }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 送出按鈕 -->
+            <button
+              @click="handleSubmit"
+              class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-2xl md:text-3xl font-bold py-5 md:py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            >
+              上傳資料
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          submitted: false,
+          displayName: 'XXX',
+          formData: {
+            idNumber: '',
+            birthDate: '',
+            cardDate: '',
+            visitNumber: '',
+            systolicBP: '',
+            diastolicBP: ''
+          },
+          errors: {}
+        };
+      },
+      mounted() {
+        this.checkLogin();
+        this.displayName = sessionStorage.getItem('displayName') || 'XXX';
+      },
+      computed: {
+        bloodPressureStatus() {
+          const sys = this.formData.systolicBP;
+          const dia = this.formData.diastolicBP;
+          
+          if (!sys || !dia) return null;
+          
+          if (sys >= 180 || dia >= 120) {
+            return {
+              title: '高血壓危象',
+              description: '血壓過高，建議立即就醫',
+              class: 'bg-red-50 border-red-300',
+              iconClass: 'text-red-600',
+              textClass: 'text-red-800',
+              descClass: 'text-red-700'
+            };
+          } else if (sys >= 140 || dia >= 90) {
+            return {
+              title: '高血壓',
+              description: '血壓偏高，請注意控制',
+              class: 'bg-orange-50 border-orange-300',
+              iconClass: 'text-orange-600',
+              textClass: 'text-orange-800',
+              descClass: 'text-orange-700'
+            };
+          } else if (sys >= 120 || dia >= 80) {
+            return {
+              title: '血壓偏高',
+              description: '接近高血壓範圍，請注意監測',
+              class: 'bg-yellow-50 border-yellow-300',
+              iconClass: 'text-yellow-600',
+              textClass: 'text-yellow-800',
+              descClass: 'text-yellow-700'
+            };
+          } else if (sys >= 90 && dia >= 60) {
+            return {
+              title: '血壓正常',
+              description: '血壓在正常範圍內',
+              class: 'bg-green-50 border-green-300',
+              iconClass: 'text-green-600',
+              textClass: 'text-green-800',
+              descClass: 'text-green-700'
+            };
+          } else {
+            return {
+              title: '血壓偏低',
+              description: '血壓較低，如有不適請就醫',
+              class: 'bg-blue-50 border-blue-300',
+              iconClass: 'text-blue-600',
+              textClass: 'text-blue-800',
+              descClass: 'text-blue-700'
+            };
+          }
+        }
+      },
+      methods: {
+        checkLogin() {
+          const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+          if (isLoggedIn !== 'true') {
+            window.location.href = 'login.html';
+          }
+        },
+        handleLogout() {
+          if (confirm('確定要登出嗎？')) {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('username');
+            sessionStorage.removeItem('displayName');
+            window.location.href = 'login.html';
+          }
+        },
+        validateForm() {
+          this.errors = {};
+          
+          // 驗證身分證
+          if (!this.formData.idNumber.trim()) {
+            this.errors.idNumber = '請輸入身分證字號';
+          } else if (this.formData.idNumber.length !== 10) {
+            this.errors.idNumber = '身分證字號必須為10碼';
+          }
+          
+          // 驗證生日
+          if (!this.formData.birthDate) {
+            this.errors.birthDate = '請選擇生日';
+          }
+          
+          // 驗證過卡日期
+          if (!this.formData.cardDate) {
+            this.errors.cardDate = '請選擇過卡日期';
+          }
+          
+          // 驗證就醫序號
+          if (!this.formData.visitNumber.trim()) {
+            this.errors.visitNumber = '請輸入就醫序號';
+          } else if (this.formData.visitNumber.length !== 4) {
+            this.errors.visitNumber = '就醫序號必須為4碼';
+          } else if (!/^\d{4}$/.test(this.formData.visitNumber)) {
+            this.errors.visitNumber = '就醫序號必須為數字';
+          }
+          
+          // 驗證收縮壓
+          if (!this.formData.systolicBP && this.formData.systolicBP !== 0) {
+            this.errors.systolicBP = '請輸入收縮壓';
+          } else if (this.formData.systolicBP < 0 || this.formData.systolicBP > 300) {
+            this.errors.systolicBP = '收縮壓數值異常（0-300）';
+          }
+          
+          // 驗證舒張壓
+          if (!this.formData.diastolicBP && this.formData.diastolicBP !== 0) {
+            this.errors.diastolicBP = '請輸入舒張壓';
+          } else if (this.formData.diastolicBP < 0 || this.formData.diastolicBP > 200) {
+            this.errors.diastolicBP = '舒張壓數值異常（0-200）';
+          }
+          
+          // 驗證收縮壓必須大於舒張壓
+          if (this.formData.systolicBP && this.formData.diastolicBP) {
+            if (this.formData.systolicBP <= this.formData.diastolicBP) {
+              this.errors.systolicBP = '收縮壓必須大於舒張壓';
+            }
+          }
+          
+          return Object.keys(this.errors).length === 0;
+        },
+        async handleSubmit() {
+          if (this.validateForm()) {
+            try {
+              // 顯示載入中
+              const loadingMsg = document.createElement('div');
+              loadingMsg.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-2xl shadow-2xl z-50';
+              loadingMsg.innerHTML = `
+                <div class="flex flex-col items-center">
+                  <svg class="animate-spin h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p class="text-xl font-semibold text-gray-700">資料上傳中...</p>
+                </div>
+              `;
+              document.body.appendChild(loadingMsg);
+
+              // 送出資料到 PHP 後端
+              const response = await fetch('php/save_blood_pressure.php', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.formData)
+              });
+
+              const result = await response.json();
+              
+              // 移除載入訊息
+              document.body.removeChild(loadingMsg);
+
+              if (result.success) {
+                console.log('儲存成功：', result);
+                this.submitted = true;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                alert('儲存失敗：' + result.message);
+              }
+              
+            } catch (error) {
+              console.error('送出錯誤：', error);
+              alert('資料送出時發生錯誤，請稍後再試');
+            }
+          } else {
+            const firstError = document.querySelector('.text-red-500');
+            if (firstError) {
+              firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

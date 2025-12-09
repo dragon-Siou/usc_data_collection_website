@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代謝防治表單</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>[v-cloak] { display: none; }</style>
+</head>
+<body>
+  <div id="app" v-cloak>
+    <!-- 右上角使用者資訊和登出按鈕 -->
+    <div v-if="!submitted" class="fixed top-0 right-0 p-4 md:p-6 z-50 flex items-center gap-3 md:gap-4">
+      <div class="bg-white px-4 py-2 md:px-6 md:py-3 rounded-xl shadow-md flex items-center">
+        <svg class="w-5 h-5 md:w-6 md:h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        <span class="text-lg md:text-xl font-semibold text-gray-700">{{ displayName }}</span>
+      </div>
+      <button @click="handleLogout" class="flex items-center text-gray-600 hover:text-red-600 text-lg md:text-xl font-medium bg-white px-4 py-2 md:px-6 md:py-3 rounded-xl shadow-md hover:shadow-lg transition-all">
+        <svg class="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        登出
+      </button>
+    </div>
+
+    <!-- 成功訊息畫面 -->
+    <div v-if="submitted" class="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 text-center max-w-md">
+        <svg class="w-20 h-20 md:w-24 md:h-24 text-green-500 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">送出成功！</h2>
+        <p class="text-xl md:text-2xl text-gray-600 mb-8">您的代謝防治資料已成功送出</p>
+        <button @click="goHome" class="bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-4 rounded-xl text-xl md:text-2xl font-bold shadow-lg hover:shadow-xl transition-all">
+          返回首頁
+        </button>
+      </div>
+    </div>
+
+    <!-- 表單主體 -->
+    <div v-else class="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 py-8 px-4 md:py-12">
+      <div class="max-w-4xl mx-auto">
+        <!-- 返回首頁按鈕 -->
+        <a href="index.html" class="flex items-center text-indigo-600 hover:text-indigo-700 mb-6 text-xl md:text-2xl font-medium">
+          <svg class="w-6 h-6 md:w-7 md:h-7 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          返回首頁
+        </a>
+
+        <!-- 標題區 -->
+        <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-10 mb-6">
+          <div class="flex items-center mb-6">
+            <div class="bg-indigo-500 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-white text-3xl md:text-4xl font-bold mr-4 md:mr-6">
+              代
+            </div>
+            <div>
+              <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">代謝防治表單</h1>
+              <p class="text-xl md:text-2xl text-gray-600">代謝症候群防治資料填寫</p>
+            </div>
+          </div>
+
+          <!-- 進度條 -->
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <span class="text-lg md:text-xl font-semibold text-indigo-600">第 {{ currentPage }} / 3 頁</span>
+              <span class="text-lg md:text-xl text-gray-600">{{ Math.round((currentPage / 3) * 100) }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 md:h-4">
+              <div class="bg-indigo-500 h-3 md:h-4 rounded-full transition-all duration-300" :style="{ width: (currentPage / 3 * 100) + '%' }"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 表單內容 -->
+        <form @submit.prevent="submitForm" class="bg-white rounded-3xl shadow-2xl p-6 md:p-10">
+          
+          <!-- ==================== 第1頁：基本資料 ==================== -->
+          <div v-show="currentPage === 1">
+            <h2 class="text-2xl md:text-3xl font-bold text-indigo-600 mb-6 pb-4 border-b-2 border-indigo-200">基本資料</h2>
+            
+            <!-- 身分證 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                身分證字號 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.idNumber" 
+                type="text" 
+                maxlength="10"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.idNumber ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入身分證字號">
+              <p v-if="errors.idNumber" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.idNumber }}</p>
+            </div>
+
+            <!-- 生日 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                生日 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.birthDate" 
+                type="date" 
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.birthDate ? 'border-red-500' : 'border-gray-300'">
+              <p v-if="errors.birthDate" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.birthDate }}</p>
+            </div>
+
+            <!-- 姓名 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                姓名 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.name" 
+                type="text" 
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.name ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入姓名">
+              <p v-if="errors.name" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.name }}</p>
+            </div>
+
+            <!-- 性別 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                性別 <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.gender === '0' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.gender" value="0" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">0. 男</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.gender === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.gender" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 女</span>
+                </label>
+              </div>
+              <p v-if="errors.gender" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.gender }}</p>
+            </div>
+
+            <!-- 收案日期 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                收案日期 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.caseDate" 
+                type="date" 
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.caseDate ? 'border-red-500' : 'border-gray-300'">
+              <p v-if="errors.caseDate" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.caseDate }}</p>
+            </div>
+          </div>
+
+          <!-- ==================== 第2頁:危險因子 ==================== -->
+          <div v-show="currentPage === 2">
+            <h2 class="text-2xl md:text-3xl font-bold text-indigo-600 mb-6 pb-4 border-b-2 border-indigo-200">危險因子</h2>
+            
+            <!-- 危險因子-抽菸(1) -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                危險因子-抽菸(1) <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.smoking === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.smoking" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 無</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.smoking === '2' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.smoking" value="2" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">2. 偶爾交際應酬</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.smoking === '3' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.smoking" value="3" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">3. 平均一天約吸10支菸以下</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.smoking === '4' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.smoking" value="4" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">4. 平均一天約吸10支菸(含)以上</span>
+                </label>
+              </div>
+              <p v-if="errors.smoking" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.smoking }}</p>
+            </div>
+
+            <!-- 危險因子-嚼檳榔(2) -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                危險因子-嚼檳榔(2) <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.betelNut === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.betelNut" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 無</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.betelNut === '2' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.betelNut" value="2" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">2. 偶爾交際應酬</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.betelNut === '3' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.betelNut" value="3" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">3. 經常嚼或習慣在嚼</span>
+                </label>
+              </div>
+              <p v-if="errors.betelNut" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.betelNut }}</p>
+            </div>
+
+            <!-- 危險因子-運動(3) -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                危險因子-運動(3) <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.exercise === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.exercise" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 無</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.exercise === '2' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.exercise" value="2" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">2. 偶爾運動</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.exercise === '3' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.exercise" value="3" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">3. 經常運動(每週累計達150分鐘)</span>
+                </label>
+              </div>
+              <p v-if="errors.exercise" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.exercise }}</p>
+            </div>
+
+            <!-- 伴隨疾病 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                伴隨疾病 (可複選，非必填)
+              </label>
+              <div class="space-y-3">
+                <label v-for="disease in diseases" :key="disease.value" 
+                  class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.diseases.includes(disease.value) ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="checkbox" v-model="formData.diseases" :value="disease.value" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500 rounded">
+                  <span class="ml-3 text-xl md:text-2xl">{{ disease.label }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 伴隨疾病(其他) -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                伴隨疾病(其他) - ICD10代碼 (非必填)
+              </label>
+              <p class="text-lg md:text-xl text-gray-600 mb-3">若上述伴隨疾病沒有符合,請填寫ICD10代碼</p>
+              <input 
+                v-model="formData.diseaseOther" 
+                type="text" 
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="請輸入ICD10代碼">
+            </div>
+          </div>
+
+          <!-- ==================== 第3頁:檢查資料 ==================== -->
+          <div v-show="currentPage === 3">
+            <h2 class="text-2xl md:text-3xl font-bold text-indigo-600 mb-6 pb-4 border-b-2 border-indigo-200">檢查資料</h2>
+            
+            <!-- 檢查日期 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                檢查日期 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.checkDate" 
+                type="date" 
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.checkDate ? 'border-red-500' : 'border-gray-300'">
+              <p v-if="errors.checkDate" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.checkDate }}</p>
+            </div>
+
+            <!-- 身高 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                身高(cm) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.height" 
+                type="number" 
+                min="0"
+                step="1"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.height ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入身高">
+              <p v-if="errors.height" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.height }}</p>
+            </div>
+
+            <!-- 體重 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                體重(kg) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.weight" 
+                type="number" 
+                min="0"
+                step="1"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.weight ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入體重">
+              <p v-if="errors.weight" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.weight }}</p>
+            </div>
+
+            <!-- 腰圍 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                腰圍(cm) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.waist" 
+                type="number" 
+                min="0"
+                step="1"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.waist ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入腰圍">
+              <p v-if="errors.waist" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.waist }}</p>
+            </div>
+
+            <!-- 收縮壓 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                收縮壓(mmHg) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.systolicBP" 
+                type="number" 
+                min="0"
+                step="1"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.systolicBP ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入收縮壓">
+              <p v-if="errors.systolicBP" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.systolicBP }}</p>
+            </div>
+
+            <!-- 舒張壓 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                舒張壓(mmHg) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.diastolicBP" 
+                type="number" 
+                min="0"
+                step="1"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.diastolicBP ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入舒張壓">
+              <p v-if="errors.diastolicBP" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.diastolicBP }}</p>
+            </div>
+
+            <!-- 血壓值來源 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                血壓值來源 <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.bpSource === '0' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.bpSource" value="0" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">0. 非診間量測</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.bpSource === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.bpSource" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 診間量測</span>
+                </label>
+              </div>
+              <p v-if="errors.bpSource" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.bpSource }}</p>
+            </div>
+
+            <!-- 降血壓藥物 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                降血壓藥物 <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.bpMedicine === '0' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.bpMedicine" value="0" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">0. 無</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.bpMedicine === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.bpMedicine" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 有</span>
+                </label>
+              </div>
+              <p v-if="errors.bpMedicine" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.bpMedicine }}</p>
+            </div>
+
+            <!-- 降血糖藥物 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                降血糖藥物 <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.sugarMedicine === '0' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.sugarMedicine" value="0" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">0. 無</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.sugarMedicine === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.sugarMedicine" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 有</span>
+                </label>
+              </div>
+              <p v-if="errors.sugarMedicine" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.sugarMedicine }}</p>
+            </div>
+
+            <!-- 降血脂藥物 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                降血脂藥物 <span class="text-red-500">*</span>
+              </label>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.lipidMedicine === '0' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.lipidMedicine" value="0" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">0. 無</span>
+                </label>
+                <label class="flex items-center p-4 md:p-5 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors"
+                  :class="formData.lipidMedicine === '1' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
+                  <input type="radio" v-model="formData.lipidMedicine" value="1" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500">
+                  <span class="ml-3 text-xl md:text-2xl">1. 有</span>
+                </label>
+              </div>
+              <p v-if="errors.lipidMedicine" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.lipidMedicine }}</p>
+            </div>
+
+            <!-- 飯前血糖值 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                飯前血糖值(mg/dl) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.fastingGlucose" 
+                type="number" 
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.fastingGlucose ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入飯前血糖值">
+              <p v-if="errors.fastingGlucose" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.fastingGlucose }}</p>
+            </div>
+
+            <!-- 三酸甘油脂 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                三酸甘油脂(mg/dl) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.triglyceride" 
+                type="number" 
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.triglyceride ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入三酸甘油脂">
+              <p v-if="errors.triglyceride" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.triglyceride }}</p>
+            </div>
+
+            <!-- 高密度脂蛋白膽固醇值 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                高密度脂蛋白膽固醇值(mg/dl) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.hdl" 
+                type="number" 
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.hdl ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入HDL">
+              <p v-if="errors.hdl" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.hdl }}</p>
+            </div>
+
+            <!-- 低密度脂蛋白膽固醇值 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                低密度脂蛋白膽固醇值(mg/dl) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.ldl" 
+                type="number" 
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.ldl ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入LDL">
+              <p v-if="errors.ldl" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.ldl }}</p>
+            </div>
+
+            <!-- 醣化血紅素 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                醣化血紅素(%) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.hba1c" 
+                type="number" 
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.hba1c ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入HbA1c">
+              <p v-if="errors.hba1c" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.hba1c }}</p>
+            </div>
+
+            <!-- 總膽固醇值 -->
+            <div class="mb-6">
+              <label class="block text-xl md:text-2xl font-semibold text-gray-700 mb-3">
+                總膽固醇值(mg/dl) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model.number="formData.totalCholesterol" 
+                type="number" 
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-4 md:px-6 md:py-5 text-xl md:text-2xl border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="errors.totalCholesterol ? 'border-red-500' : 'border-gray-300'"
+                placeholder="請輸入總膽固醇值">
+              <p v-if="errors.totalCholesterol" class="text-red-500 text-lg md:text-xl mt-2">{{ errors.totalCholesterol }}</p>
+            </div>
+          </div>
+
+          <!-- 導航按鈕 -->
+          <div class="flex gap-4 mt-8">
+            <button 
+              v-if="currentPage > 1"
+              type="button"
+              @click="previousPage"
+              class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-4 md:px-8 md:py-5 rounded-xl text-xl md:text-2xl font-bold shadow-lg hover:shadow-xl transition-all">
+              上一頁
+            </button>
+            <button 
+              v-if="currentPage < 3"
+              type="button"
+              @click="nextPage"
+              class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-4 md:px-8 md:py-5 rounded-xl text-xl md:text-2xl font-bold shadow-lg hover:shadow-xl transition-all">
+              下一頁
+            </button>
+            <button 
+              v-if="currentPage === 3"
+              type="submit"
+              :disabled="isSubmitting"
+              class="flex-1 bg-green-500 hover:bg-green-600 text-white px-6 py-4 md:px-8 md:py-5 rounded-xl text-xl md:text-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ isSubmitting ? '送出中...' : '送出資料' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          currentPage: 1,
+          submitted: false,
+          isSubmitting: false,
+          displayName: '',
+          errors: {},
+          formData: {
+            // 第1頁:基本資料
+            idNumber: '',
+            birthDate: '',
+            name: '',
+            gender: '',
+            caseDate: '',
+            // 第2頁:危險因子
+            smoking: '',
+            betelNut: '',
+            exercise: '',
+            diseases: [],
+            diseaseOther: '',
+            // 第3頁:檢查資料
+            checkDate: '',
+            height: '',
+            weight: '',
+            waist: '',
+            systolicBP: '',
+            diastolicBP: '',
+            bpSource: '',
+            bpMedicine: '',
+            sugarMedicine: '',
+            lipidMedicine: '',
+            fastingGlucose: '',
+            triglyceride: '',
+            hdl: '',
+            ldl: '',
+            hba1c: '',
+            totalCholesterol: ''
+          },
+          diseases: [
+            { value: '1', label: '1. 無' },
+            { value: '2', label: '2. 糖尿病' },
+            { value: '3', label: '3. 高血壓' },
+            { value: '4', label: '4. 心臟血管疾病' },
+            { value: '5', label: '5. 高血脂症' },
+            { value: '6', label: '6. 腎臟病' },
+            { value: '7', label: '7. 腦血管疾病' }
+          ]
+        };
+      },
+      mounted() {
+        // 檢查登入狀態
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        if (isLoggedIn !== 'true') {
+          alert('請先登入');
+          window.location.href = 'login.html';
+          return;
+        }
+        // 取得顯示名稱
+        this.displayName = sessionStorage.getItem('displayName') || 'XXX';
+      },
+      methods: {
+        handleLogout() {
+          if (confirm('確定要登出嗎？')) {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('username');
+            sessionStorage.removeItem('displayName');
+            window.location.href = 'login.html';
+          }
+        },
+        validateCurrentPage() {
+          this.errors = {};
+          if (this.currentPage === 1) {
+            if (!this.formData.idNumber.trim()) this.errors.idNumber = '請輸入身分證字號';
+            else if (this.formData.idNumber.length !== 10) this.errors.idNumber = '身分證字號必須為10碼';
+            if (!this.formData.birthDate) this.errors.birthDate = '請選擇生日';
+            if (!this.formData.name.trim()) this.errors.name = '請輸入姓名';
+            if (!this.formData.gender) this.errors.gender = '請選擇性別';
+            if (!this.formData.caseDate) this.errors.caseDate = '請選擇收案日期';
+          } else if (this.currentPage === 2) {
+            if (!this.formData.smoking) this.errors.smoking = '請選擇抽菸習慣';
+            if (!this.formData.betelNut) this.errors.betelNut = '請選擇嚼檳榔習慣';
+            if (!this.formData.exercise) this.errors.exercise = '請選擇運動習慣';
+          } else if (this.currentPage === 3) {
+            if (!this.formData.checkDate) this.errors.checkDate = '請選擇檢查日期';
+            if (!this.formData.height) this.errors.height = '請輸入身高';
+            if (!this.formData.weight) this.errors.weight = '請輸入體重';
+            if (!this.formData.waist) this.errors.waist = '請輸入腰圍';
+            if (!this.formData.systolicBP) this.errors.systolicBP = '請輸入收縮壓';
+            if (!this.formData.diastolicBP) this.errors.diastolicBP = '請輸入舒張壓';
+            if (!this.formData.bpSource) this.errors.bpSource = '請選擇血壓值來源';
+            if (!this.formData.bpMedicine) this.errors.bpMedicine = '請選擇是否使用降血壓藥物';
+            if (!this.formData.sugarMedicine) this.errors.sugarMedicine = '請選擇是否使用降血糖藥物';
+            if (!this.formData.lipidMedicine) this.errors.lipidMedicine = '請選擇是否使用降血脂藥物';
+            if (!this.formData.fastingGlucose) this.errors.fastingGlucose = '請輸入飯前血糖值';
+            if (!this.formData.triglyceride) this.errors.triglyceride = '請輸入三酸甘油脂';
+            if (!this.formData.hdl) this.errors.hdl = '請輸入HDL';
+            if (!this.formData.ldl) this.errors.ldl = '請輸入LDL';
+            if (!this.formData.hba1c) this.errors.hba1c = '請輸入醣化血紅素';
+            if (!this.formData.totalCholesterol) this.errors.totalCholesterol = '請輸入總膽固醇值';
+          }
+          return Object.keys(this.errors).length === 0;
+        },
+        nextPage() {
+          if (this.validateCurrentPage()) {
+            this.currentPage++;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            const firstError = document.querySelector('.text-red-500');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        },
+        previousPage() {
+          this.currentPage--;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        async submitForm() {
+          if (!this.validateCurrentPage()) {
+            const firstError = document.querySelector('.text-red-500');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+
+          this.isSubmitting = true;
+          try {
+            const response = await fetch('php/save_metabolic_prevention.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.formData)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+              this.submitted = true;
+              setTimeout(() => {
+                window.location.href = 'index.html';
+              }, 2000);
+            } else {
+              alert('送出失敗:' + (result.message || '未知錯誤'));
+            }
+          } catch (error) {
+            console.error('送出錯誤:', error);
+            alert('送出失敗,請稍後再試');
+          } finally {
+            this.isSubmitting = false;
+          }
+        },
+        goHome() {
+          window.location.href = 'index.html';
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
