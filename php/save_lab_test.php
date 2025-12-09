@@ -58,40 +58,13 @@ try {
         sendErrorResponse('找不到對應的個人資料，請先填寫健康調查表單');
     }
     
-    // 2. 處理單項檢驗資料
-    $single_tests = null;
-    if (!empty($data['singleTests'])) {
-        // 過濾掉空的測試項目
-        $validTests = array_filter($data['singleTests'], function($test) {
-            return !empty($test['testCode']) || !empty($test['result']);
-        });
-        
-        if (!empty($validTests)) {
-            $single_tests = json_encode(array_values($validTests), JSON_UNESCAPED_UNICODE);
-        }
-    }
-    
-    // 3. 提取尿液檢查資料
-    $urineTest = $data['urineTest'] ?? [];
-    
-    // 4. 提取血液檢查資料
-    $bloodTest = $data['bloodTest'] ?? [];
-    
-    // 5. 新增檢驗檢查記錄
+    // 2. 新增檢驗檢查主表資料
     $stmt = $pdo->prepare("
         INSERT INTO lab_test (
             person_id, id_number, birth_date, card_date, 
-            visit_number, doctor_id, single_tests,
-            urine_appearance, urine_color, urine_reaction, urine_glucose,
-            urine_occult_blood, urine_protein, urine_urobilinogen, urine_nitrite,
-            urine_leukocyte, urine_bilirubin, urine_ketone_body, urine_specific_gravi,
-            urine_rbc, urine_wbc, urine_clarity,
-            blood_wbc, blood_rbc, blood_hb, blood_hct,
-            blood_mch, blood_mcv, blood_mchc, ip_address
+            medical_serial, doctor_id, ip_address
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?
         )
     ");
     
@@ -102,65 +75,154 @@ try {
         $data['cardDate'],
         $data['visitNumber'],
         $data['doctorId'],
-        $single_tests,
-        // 尿液檢查
-        $urineTest['appearance'] ?? null,
-        $urineTest['color'] ?? null,
-        $urineTest['reaction'] ?? null,
-        $urineTest['glucose'] ?? null,
-        $urineTest['occultBlood'] ?? null,
-        $urineTest['protein'] ?? null,
-        $urineTest['urobilinogen'] ?? null,
-        $urineTest['nitrite'] ?? null,
-        $urineTest['leukocyte'] ?? null,
-        $urineTest['bilirubin'] ?? null,
-        $urineTest['ketoneBody'] ?? null,
-        $urineTest['specificGravi'] ?? null,
-        $urineTest['rbc'] ?? null,
-        $urineTest['wbc'] ?? null,
-        $urineTest['clarity'] ?? null,
-        // 血液檢查
-        $bloodTest['wbc'] ?? null,
-        $bloodTest['rbc'] ?? null,
-        $bloodTest['hb'] ?? null,
-        $bloodTest['hct'] ?? null,
-        $bloodTest['mch'] ?? null,
-        $bloodTest['mcv'] ?? null,
-        $bloodTest['mchc'] ?? null,
         getClientIP()
     ]);
     
     $test_id = $pdo->lastInsertId();
     
+    // 3. 處理單項檢驗資料
+    $single_test_count = 0;
+    if (!empty($data['singleTests']) && is_array($data['singleTests'])) {
+        $stmt = $pdo->prepare("
+            INSERT INTO lab_test_single_items (
+                test_id, test_code, test_name, test_result
+            ) VALUES (?, ?, ?, ?)
+        ");
+        
+        foreach ($data['singleTests'] as $test) {
+            // 跳過空的測試項目
+            if (empty($test['testCode']) && empty($test['result'])) {
+                continue;
+            }
+            
+            // 判斷是否為自訂項目
+            if ($test['testCode'] === 'other' && !empty($test['customCode'])) {
+                $testCode = $test['customCode'];
+                $testName = '其他檢驗：' . $testCode;
+            } else {
+                $testCode = $test['testCode'];
+                // 根據代碼取得檢驗名稱
+                $testName = getTestName($testCode);
+            }
+            
+            $stmt->execute([
+                $test_id,
+                $testCode,
+                $testName,
+                $test['result'] ?? ''
+            ]);
+            
+            $single_test_count++;
+        }
+    }
+    
+    // 4. 處理尿液檢查資料
+    $urine_test_count = 0;
+    if (!empty($data['urineTest'])) {
+        $urineTest = $data['urineTest'];
+        
+        // 檢查是否有填寫任何尿液檢查項目
+        $hasUrineData = false;
+        foreach ($urineTest as $value) {
+            if (!empty($value)) {
+                $hasUrineData = true;
+                break;
+            }
+        }
+        
+        if ($hasUrineData) {
+            $stmt = $pdo->prepare("
+                INSERT INTO lab_test_urine (
+                    test_id, appearance, color, reaction_ph, glucose,
+                    occult_blood, protein, urobilinogen, nitrite,
+                    leukocyte, bilirubin, ketone_body, specific_gravity,
+                    rbc, wbc, clarity
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                )
+            ");
+            
+            $stmt->execute([
+                $test_id,
+                $urineTest['appearance'] ?? null,
+                $urineTest['color'] ?? null,
+                $urineTest['reaction'] ?? null,
+                $urineTest['glucose'] ?? null,
+                $urineTest['occultBlood'] ?? null,
+                $urineTest['protein'] ?? null,
+                $urineTest['urobilinogen'] ?? null,
+                $urineTest['nitrite'] ?? null,
+                $urineTest['leukocyte'] ?? null,
+                $urineTest['bilirubin'] ?? null,
+                $urineTest['ketoneBody'] ?? null,
+                $urineTest['specificGravi'] ?? null,
+                $urineTest['rbc'] ?? null,
+                $urineTest['wbc'] ?? null,
+                $urineTest['clarity'] ?? null
+            ]);
+            
+            $urine_test_count = count(array_filter($urineTest, function($v) {
+                return !empty($v);
+            }));
+        }
+    }
+    
+    // 5. 處理血液檢查資料
+    $blood_test_count = 0;
+    if (!empty($data['bloodTest'])) {
+        $bloodTest = $data['bloodTest'];
+        
+        // 檢查是否有填寫任何血液檢查項目
+        $hasBloodData = false;
+        foreach ($bloodTest as $value) {
+            if (!empty($value)) {
+                $hasBloodData = true;
+                break;
+            }
+        }
+        
+        if ($hasBloodData) {
+            $stmt = $pdo->prepare("
+                INSERT INTO lab_test_blood (
+                    test_id, wbc, rbc, hb, hct, mch, mcv, mchc
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?
+                )
+            ");
+            
+            $stmt->execute([
+                $test_id,
+                $bloodTest['wbc'] ?? null,
+                $bloodTest['rbc'] ?? null,
+                $bloodTest['hb'] ?? null,
+                $bloodTest['hct'] ?? null,
+                $bloodTest['mch'] ?? null,
+                $bloodTest['mcv'] ?? null,
+                $bloodTest['mchc'] ?? null
+            ]);
+            
+            $blood_test_count = count(array_filter($bloodTest, function($v) {
+                return !empty($v);
+            }));
+        }
+    }
+    
     // 提交交易
     $pdo->commit();
     
-    // 統計填寫的項目數
-    $itemCount = 0;
-    if ($single_tests) {
-        $itemCount += count(json_decode($single_tests, true));
-    }
-    
-    // 計算尿液檢查填寫項目
-    $urineCount = count(array_filter($urineTest, function($v) {
-        return !empty($v);
-    }));
-    if ($urineCount > 0) $itemCount++;
-    
-    // 計算血液檢查填寫項目
-    $bloodCount = count(array_filter($bloodTest, function($v) {
-        return !empty($v);
-    }));
-    if ($bloodCount > 0) $itemCount++;
+    // 計算總項目數
+    $total_items = $single_test_count;
+    if ($urine_test_count > 0) $total_items++;
+    if ($blood_test_count > 0) $total_items++;
     
     // 回傳成功訊息
     sendSuccessResponse([
         'person_id' => $person_id,
         'test_id' => $test_id,
-        'item_count' => $itemCount,
-        'single_test_count' => $single_tests ? count(json_decode($single_tests, true)) : 0,
-        'urine_test_items' => $urineCount,
-        'blood_test_items' => $bloodCount
+        'total_items' => $total_items,
+        'single_test_count' => $single_test_count,
+        'urine_test_items' => $urine_test_count,
+        'blood_test_items' => $blood_test_count
     ], '檢驗資料上傳成功');
     
 } catch (PDOException $e) {
@@ -180,5 +242,21 @@ try {
     }
     
     sendErrorResponse($e->getMessage(), 500);
+}
+
+/**
+ * 根據檢驗代碼取得檢驗名稱
+ */
+function getTestName($code) {
+    $testNames = [
+        '09005C' => '指尖血血糖 One touch Glucose',
+        '14065C' => 'A型流感',
+        '14066C' => 'B型流感',
+        '14058C' => 'RSV 呼吸融合細胞病毒',
+        '06505C' => '驗孕',
+        '14084C' => '新型冠狀病毒抗原檢測'
+    ];
+    
+    return $testNames[$code] ?? $code;
 }
 ?>
