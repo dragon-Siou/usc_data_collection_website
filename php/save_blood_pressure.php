@@ -61,7 +61,7 @@ try {
     
     // 1. 檢查個人資料是否存在
     $stmt = $pdo->prepare("
-        SELECT person_id FROM personal_info WHERE id_number = ?
+        SELECT person_id, gender FROM personal_info WHERE id_number = ?
     ");
     $stmt->execute([$data['idNumber']]);
     $person = $stmt->fetch();
@@ -81,9 +81,17 @@ try {
             $data['birthDate']
         ]);
     } else {
-        // 如果個人資料不存在，建立新記錄（需要姓名和性別，這裡暫時使用預設值）
-        // 實際應用中，可能需要先填寫完整個人資料
-        sendErrorResponse('找不到對應的個人資料，請先填寫健康調查表單');
+        // 如果個人資料不存在，建立新記錄（姓名為 NULL，性別暫時設為男）
+        // 後續填寫其他表單時會補齊完整資料
+        $stmt = $pdo->prepare("
+            INSERT INTO personal_info (id_number, birth_date, gender, name)
+            VALUES (?, ?, '男', NULL)
+        ");
+        $stmt->execute([
+            $data['idNumber'],
+            $data['birthDate']
+        ]);
+        $person_id = $pdo->lastInsertId();
     }
     
     // 2. 新增血壓記錄

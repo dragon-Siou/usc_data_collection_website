@@ -54,8 +54,30 @@ try {
     
     if ($person) {
         $person_id = $person['person_id'];
+        
+        // 更新生日（如果不同）
+        $stmt = $pdo->prepare("
+            UPDATE personal_info 
+            SET birth_date = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE person_id = ? AND birth_date != ?
+        ");
+        $stmt->execute([
+            $data['birthDate'],
+            $person_id,
+            $data['birthDate']
+        ]);
     } else {
-        sendErrorResponse('找不到對應的個人資料，請先填寫健康調查表單');
+        // 如果個人資料不存在，建立新記錄（姓名為 NULL，性別暫時設為男）
+        // 後續填寫其他表單時會補齊完整資料
+        $stmt = $pdo->prepare("
+            INSERT INTO personal_info (id_number, birth_date, gender, name)
+            VALUES (?, ?, '男', NULL)
+        ");
+        $stmt->execute([
+            $data['idNumber'],
+            $data['birthDate']
+        ]);
+        $person_id = $pdo->lastInsertId();
     }
     
     // 2. 新增檢驗檢查主表資料

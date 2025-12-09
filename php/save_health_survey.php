@@ -45,7 +45,7 @@ try {
     $person = $stmt->fetch();
     
     if ($person) {
-        // 更新現有資料
+        // 更新現有資料（姓名一定要更新，因為健康調查表有姓名）
         $person_id = $person['person_id'];
         $stmt = $pdo->prepare("
             UPDATE personal_info 

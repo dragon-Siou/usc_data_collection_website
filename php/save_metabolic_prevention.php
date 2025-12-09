@@ -105,27 +105,40 @@ try {
     if ($person) {
         $person_id = $person['person_id'];
         
-        // 更新個人資料
-        $stmt = $pdo->prepare("
-            UPDATE personal_info 
-            SET name = ?, birth_date = ?, gender = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE person_id = ?
-        ");
-        $stmt->execute([
-            $data['name'],
-            $data['birthDate'],
-            $gender,
-            $person_id
-        ]);
+        // 更新個人資料（如果有提供姓名則更新，沒有則保持原值）
+        if (!empty($data['name'])) {
+            $stmt = $pdo->prepare("
+                UPDATE personal_info 
+                SET name = ?, birth_date = ?, gender = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE person_id = ?
+            ");
+            $stmt->execute([
+                $data['name'],
+                $data['birthDate'],
+                $gender,
+                $person_id
+            ]);
+        } else {
+            $stmt = $pdo->prepare("
+                UPDATE personal_info 
+                SET birth_date = ?, gender = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE person_id = ?
+            ");
+            $stmt->execute([
+                $data['birthDate'],
+                $gender,
+                $person_id
+            ]);
+        }
     } else {
-        // 新增個人資料
+        // 新增個人資料（姓名可以為 NULL）
         $stmt = $pdo->prepare("
             INSERT INTO personal_info (id_number, name, birth_date, gender)
             VALUES (?, ?, ?, ?)
         ");
         $stmt->execute([
             $data['idNumber'],
-            $data['name'],
+            !empty($data['name']) ? $data['name'] : null,
             $data['birthDate'],
             $gender
         ]);
