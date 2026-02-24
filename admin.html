@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>後台管理系統</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app" v-cloak>
+    <!-- 頂部導覽列 -->
+    <div class="fixed top-0 right-0 p-4 md:p-6 z-50 flex items-center gap-3 md:gap-4">
+      <div class="bg-white px-4 py-2 md:px-6 md:py-3 rounded-xl shadow-md flex items-center">
+        <svg class="w-5 h-5 md:w-6 md:h-6 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        <span class="text-lg md:text-xl font-semibold text-gray-700">{{ displayName }}</span>
+      </div>
+      <button @click="handleLogout" class="flex items-center text-gray-600 hover:text-red-600 text-lg md:text-xl font-medium bg-white px-4 py-2 md:px-6 md:py-3 rounded-xl shadow-md hover:shadow-lg transition-all">
+        <svg class="w-5 h-5 md:w-6 md:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        登出
+      </button>
+    </div>
+
+    <!-- 主要內容 -->
+    <div class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 md:p-8 pt-24">
+      <div class="max-w-7xl mx-auto">
+        <!-- 標題區 -->
+        <div class="text-center mb-8">
+          <div class="flex items-center justify-center mb-4">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center shadow-lg">
+              <svg class="w-12 h-12 md:w-14 md:h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+          </div>
+          <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">後台管理系統</h1>
+          <p class="text-xl md:text-2xl text-gray-600">資料匯出與統計</p>
+        </div>
+
+        <!-- 返回首頁按鈕 -->
+        <div class="mb-6">
+          <a href="index.html" class="inline-flex items-center text-indigo-600 hover:text-indigo-700 text-xl md:text-2xl font-medium">
+            <svg class="w-6 h-6 md:w-7 md:h-7 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            返回首頁
+          </a>
+        </div>
+
+        <!-- 統計資訊卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <div v-for="stat in statistics" :key="stat.type" class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all">
+            <div class="flex items-center justify-between mb-4">
+              <div :class="stat.colorClass" class="w-12 h-12 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="stat.icon"></path>
+                </svg>
+              </div>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-600 mb-1">{{ stat.title }}</h3>
+            <p class="text-3xl font-bold text-gray-800">{{ stat.count }}</p>
+          </div>
+        </div>
+
+        <!-- 日期區間選擇器 -->
+        <div class="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
+          <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center">
+            <svg class="w-8 h-8 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            選擇匯出日期區間
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- 開始日期 -->
+            <div>
+              <label class="block text-xl font-semibold text-gray-700 mb-3">開始日期</label>
+              <input 
+                v-model="dateRange.start" 
+                type="date" 
+                class="w-full px-5 py-4 text-xl border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all"
+              />
+            </div>
+            
+            <!-- 結束日期 -->
+            <div>
+              <label class="block text-xl font-semibold text-gray-700 mb-3">結束日期</label>
+              <input 
+                v-model="dateRange.end" 
+                type="date" 
+                class="w-full px-5 py-4 text-xl border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- 快速選擇按鈕 -->
+          <div class="flex flex-wrap gap-3">
+            <button @click="setQuickDate('today')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-lg font-medium transition-all">今天</button>
+            <button @click="setQuickDate('yesterday')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-lg font-medium transition-all">昨天</button>
+            <button @click="setQuickDate('week')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-lg font-medium transition-all">本週</button>
+            <button @click="setQuickDate('month')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-lg font-medium transition-all">本月</button>
+            <button @click="setQuickDate('all')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-lg font-medium transition-all">全部</button>
+          </div>
+
+          <!-- 日期區間提示 -->
+          <div v-if="dateRange.start || dateRange.end" class="mt-6 p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl">
+            <p class="text-lg text-indigo-700">
+              <span class="font-semibold">匯出區間：</span>
+              {{ dateRange.start || '最早' }} 至 {{ dateRange.end || '最新' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- 資料匯出按鈕 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          
+          <!-- 健康調查 -->
+          <div class="bg-white rounded-3xl shadow-xl p-6 md:p-8 hover:shadow-2xl transition-all">
+            <div class="flex items-center mb-6">
+              <div class="bg-blue-500 w-16 h-16 rounded-2xl flex items-center justify-center mr-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-2xl md:text-3xl font-bold text-gray-800">健康調查</h3>
+                <p class="text-lg text-gray-600">Health Survey</p>
+              </div>
+            </div>
+            <button 
+              @click="exportData('health_survey')"
+              :disabled="isExporting.health_survey"
+              class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="!isExporting.health_survey" class="flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                下載 Excel
+              </span>
+              <span v-else class="flex items-center justify-center">
+                <svg class="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                匯出中...
+              </span>
+            </button>
+          </div>
+
+          <!-- 血壓資料 -->
+          <div class="bg-white rounded-3xl shadow-xl p-6 md:p-8 hover:shadow-2xl transition-all">
+            <div class="flex items-center mb-6">
+              <div class="bg-red-500 w-16 h-16 rounded-2xl flex items-center justify-center mr-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-2xl md:text-3xl font-bold text-gray-800">血壓資料</h3>
+                <p class="text-lg text-gray-600">Blood Pressure</p>
+              </div>
+            </div>
+            <button 
+              @click="exportData('blood_pressure')"
+              :disabled="isExporting.blood_pressure"
+              class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="!isExporting.blood_pressure" class="flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                下載 Excel
+              </span>
+              <span v-else class="flex items-center justify-center">
+                <svg class="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                匯出中...
+              </span>
+            </button>
+          </div>
+
+          <!-- 檢驗檢查 -->
+          <div class="bg-white rounded-3xl shadow-xl p-6 md:p-8 hover:shadow-2xl transition-all">
+            <div class="flex items-center mb-6">
+              <div class="bg-teal-500 w-16 h-16 rounded-2xl flex items-center justify-center mr-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-2xl md:text-3xl font-bold text-gray-800">檢驗檢查</h3>
+                <p class="text-lg text-gray-600">Lab Test</p>
+              </div>
+            </div>
+            <button 
+              @click="exportData('lab_test')"
+              :disabled="isExporting.lab_test"
+              class="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="!isExporting.lab_test" class="flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                下載 Excel
+              </span>
+              <span v-else class="flex items-center justify-center">
+                <svg class="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                匯出中...
+              </span>
+            </button>
+          </div>
+
+          <!-- 代謝防治 -->
+          <div class="bg-white rounded-3xl shadow-xl p-6 md:p-8 hover:shadow-2xl transition-all">
+            <div class="flex items-center mb-6">
+              <div class="bg-indigo-500 w-16 h-16 rounded-2xl flex items-center justify-center mr-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-2xl md:text-3xl font-bold text-gray-800">代謝防治</h3>
+                <p class="text-lg text-gray-600">Metabolic Prevention</p>
+              </div>
+            </div>
+            <button 
+              @click="exportData('metabolic_prevention')"
+              :disabled="isExporting.metabolic_prevention"
+              class="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="!isExporting.metabolic_prevention" class="flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                下載 Excel
+              </span>
+              <span v-else class="flex items-center justify-center">
+                <svg class="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                匯出中...
+              </span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- 最近匯出記錄 -->
+        <div v-if="exportHistory.length > 0" class="mt-8 bg-white rounded-3xl shadow-xl p-6 md:p-8">
+          <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center">
+            <svg class="w-8 h-8 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            最近匯出記錄
+          </h2>
+          <div class="space-y-3">
+            <div v-for="(record, index) in exportHistory" :key="index" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div class="flex items-center">
+                <div :class="getTypeColor(record.type)" class="w-10 h-10 rounded-lg flex items-center justify-center mr-4">
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-lg font-semibold text-gray-800">{{ getTypeName(record.type) }}</p>
+                  <p class="text-sm text-gray-600">{{ record.time }} | {{ record.count }} 筆資料</p>
+                </div>
+              </div>
+              <span class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium">匯出成功</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          displayName: 'XXX',
+          dateRange: {
+            start: '',
+            end: ''
+          },
+          isExporting: {
+            health_survey: false,
+            blood_pressure: false,
+            lab_test: false,
+            metabolic_prevention: false
+          },
+          statistics: [
+            { type: 'health_survey', title: '健康調查', count: 0, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorClass: 'bg-blue-500' },
+            { type: 'blood_pressure', title: '血壓記錄', count: 0, icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', colorClass: 'bg-red-500' },
+            { type: 'lab_test', title: '檢驗檢查', count: 0, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', colorClass: 'bg-teal-500' },
+            { type: 'metabolic_prevention', title: '代謝防治', count: 0, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', colorClass: 'bg-indigo-500' }
+          ],
+          exportHistory: []
+        };
+      },
+      mounted() {
+        this.checkLogin();
+        this.displayName = sessionStorage.getItem('displayName') || 'XXX';
+        this.loadStatistics();
+      },
+      methods: {
+        checkLogin() {
+          const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+          if (isLoggedIn !== 'true') {
+            window.location.href = 'login.html';
+          }
+        },
+        handleLogout() {
+          if (confirm('確定要登出嗎？')) {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('username');
+            sessionStorage.removeItem('displayName');
+            window.location.href = 'login.html';
+          }
+        },
+        async loadStatistics() {
+          // 載入各類型的資料統計
+          try {
+            // 健康調查
+            const healthRes = await fetch('php/get_health_survey.php?type=stats');
+            const healthData = await healthRes.json();
+            if (healthData.success) {
+              this.statistics[0].count = healthData.data.total_persons || 0;
+            }
+
+            // 血壓資料
+            const bpRes = await fetch('php/get_blood_pressure.php?type=stats');
+            const bpData = await bpRes.json();
+            if (bpData.success) {
+              this.statistics[1].count = bpData.data.total_records || 0;
+            }
+
+            // 檢驗檢查
+            const labRes = await fetch('php/get_lab_test.php?type=stats');
+            const labData = await labRes.json();
+            if (labData.success) {
+              this.statistics[2].count = labData.data.total_tests || 0;
+            }
+
+            // 代謝防治
+            const metRes = await fetch('php/get_metabolic_prevention.php?type=stats');
+            const metData = await metRes.json();
+            if (metData.success) {
+              this.statistics[3].count = metData.data.total_records || 0;
+            }
+          } catch (error) {
+            console.error('載入統計資料失敗:', error);
+          }
+        },
+        setQuickDate(type) {
+          const today = new Date();
+          const formatDate = (date) => date.toISOString().split('T')[0];
+
+          switch (type) {
+            case 'today':
+              this.dateRange.start = formatDate(today);
+              this.dateRange.end = formatDate(today);
+              break;
+            case 'yesterday':
+              const yesterday = new Date(today);
+              yesterday.setDate(yesterday.getDate() - 1);
+              this.dateRange.start = formatDate(yesterday);
+              this.dateRange.end = formatDate(yesterday);
+              break;
+            case 'week':
+              const weekStart = new Date(today);
+              weekStart.setDate(today.getDate() - today.getDay());
+              this.dateRange.start = formatDate(weekStart);
+              this.dateRange.end = formatDate(today);
+              break;
+            case 'month':
+              const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+              this.dateRange.start = formatDate(monthStart);
+              this.dateRange.end = formatDate(today);
+              break;
+            case 'all':
+              this.dateRange.start = '';
+              this.dateRange.end = '';
+              break;
+          }
+        },
+        async exportData(type) {
+          if (this.isExporting[type]) return;
+
+          this.isExporting[type] = true;
+          try {
+            // 建立查詢參數
+            const params = new URLSearchParams({
+              type: type,
+              start_date: this.dateRange.start || '',
+              end_date: this.dateRange.end || ''
+            });
+
+            // 呼叫匯出 API
+            const response = await fetch(`php/export_excel.php?${params.toString()}`);
+            
+            if (!response.ok) {
+              throw new Error('匯出失敗');
+            }
+
+            // 取得檔案名稱
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = `${type}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            if (disposition) {
+              const filenameMatch = disposition.match(/filename="?(.+)"?/);
+              if (filenameMatch) {
+                filename = filenameMatch[1];
+              }
+            }
+
+            // 下載檔案
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            // 記錄匯出歷史
+            this.exportHistory.unshift({
+              type: type,
+              time: new Date().toLocaleString('zh-TW'),
+              count: '匯出成功'
+            });
+            if (this.exportHistory.length > 5) {
+              this.exportHistory.pop();
+            }
+
+            // 顯示成功訊息
+            alert('檔案匯出成功！');
+
+          } catch (error) {
+            console.error('匯出錯誤:', error);
+            alert('匯出失敗，請稍後再試');
+          } finally {
+            this.isExporting[type] = false;
+          }
+        },
+        getTypeName(type) {
+          const names = {
+            'health_survey': '健康調查',
+            'blood_pressure': '血壓資料',
+            'lab_test': '檢驗檢查',
+            'metabolic_prevention': '代謝防治'
+          };
+          return names[type] || type;
+        },
+        getTypeColor(type) {
+          const colors = {
+            'health_survey': 'bg-blue-500',
+            'blood_pressure': 'bg-red-500',
+            'lab_test': 'bg-teal-500',
+            'metabolic_prevention': 'bg-indigo-500'
+          };
+          return colors[type] || 'bg-gray-500';
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
